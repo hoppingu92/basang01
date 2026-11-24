@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오늘의 밥상</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 28px 16px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    color: #4a2c1a;
+    background: radial-gradient(circle at 50% 55%, #fdf6e6, #f0dcb8);
+    font-family: "Gowun Batang", "AppleMyungjo", "Batang", serif;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(2rem, 6vw, 3rem);
+    letter-spacing: .06em;
+    color: #8f2f1f;
+  }
+
+  /* 둥근 상 */
+  .table {
+    container-type: inline-size;
+    position: relative;
+    width: min(92vw, 78vh, 680px);
+    min-width: 280px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #b9763f, #91522a 75%);
+    border: 12px solid #6e3a1c;
+    box-shadow: 0 22px 40px rgba(90, 45, 15, .35),
+                inset 0 0 0 3px #d9a066;
+  }
+
+  .dishes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    inset: 0;
+  }
+
+  /* 반찬 카드: 크기(--s)와 위치(--x, --y)는 아래 스크립트가 정함 */
+  .dishes li {
+    position: absolute;
+    left: calc(var(--x) * 100%);
+    top: calc(var(--y) * 100%);
+    width: calc(var(--s) * 100cqw);
+    height: calc(var(--s) * 100cqw);
+    transform: translate(-50%, -50%);
+    padding: 4%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4%;
+    text-align: center;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    background: #fffaf0;
+    border: 2px solid #e3c08d;
+    border-radius: 18%;
+    box-shadow: 0 6px 12px rgba(50, 22, 5, .35);
+  }
+
+  .emoji { font-size: calc(var(--s) * 45cqw); line-height: 1.15; }
+  .name  { font-size: calc(var(--s) * 15cqw); line-height: 1.2; font-weight: 700; }
+</style>
+</head>
+<body>
+
+  <h1>오늘의 밥상</h1>
+
+  <main class="table">
+    <ul class="dishes">
+      <!-- 반찬 추가: 아래에 <li>이모지 이름</li> 을 한 줄씩 쓰세요. (이모지 뒤에 한 칸 띄우기) -->
+      <li>🍚 밥</li>
+      <li>🍲 국</li>
+      <li>🥬 김치</li>
+      <li>🍳 계란말이</li>
+    </ul>
+  </main>
+
+<script>
+  // 반찬 개수에 맞춰 카드 크기와 자리를 자동으로 정합니다. 수정할 필요 없어요.
+  const cards = [...document.querySelectorAll(".dishes li")];
+
+  cards.forEach(card => {
+    const [emoji, ...name] = card.textContent.trim().split(/\s+/);
+    const e = document.createElement("span");
+    const n = document.createElement("span");
+    e.className = "emoji";
+    e.textContent = emoji;
+    n.className = "name";
+    n.textContent = name.join(" ");
+    card.replaceChildren(e, n);
+  });
+
+  // 둥근 상(반지름 0.47) 안에 모두 들어가는 가장 큰 카드 크기를 찾음
+  function findLayout(count) {
+    for (let size = 0.29; size > 0.02; size -= 0.005) {
+      const cell = size * 1.08; // 카드 + 간격
+      for (let rows = 1; rows * cell <= 0.94; rows++) {
+        const row = Array.from({ length: rows }, (_, i) => {
+          const y = ((rows - 1) / 2 - i) * cell; // 아래줄부터
+          const edge = Math.abs(y) + cell / 2;
+          const half = Math.sqrt(Math.max(0, 0.47 ** 2 - edge ** 2));
+          return { y, max: Math.floor(2 * half / cell), n: 0 };
+        }).filter(r => r.max > 0);
+        if (row.reduce((sum, r) => sum + r.max, 0) < count) continue;
+        for (let i = 0; i < count; i++) {
+          row.reduce((a, b) => (b.n / b.max < a.n / a.max ? b : a)).n++;
+        }
+        return { size, cell, row };
+      }
+    }
+  }
+
+  const layout = findLayout(cards.length);
+  if (layout) {
+    let k = 0;
+    for (const r of layout.row) {
+      for (let i = 0; i < r.n; i++) {
+        const style = cards[k++].style;
+        style.setProperty("--s", layout.size);
+        style.setProperty("--x", 0.5 + (i - (r.n - 1) / 2) * layout.cell);
+        style.setProperty("--y", 0.5 + r.y);
+      }
+    }
+  }
+</script>
+</body>
+</html>
